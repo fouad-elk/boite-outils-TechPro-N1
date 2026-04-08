@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0F1117">
+<meta name="description" content="Boîte à Outils du Programmeur - Votre prof en poche - Programmation Niveau 1">
+<title>🧰 Boîte à Outils du Programmeur</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQm/DrnRlIMOgIE91dGlscyBkdSBQcm9ncmFtbWV1ciIsInNob3J0X25hbWUiOiJCb8OudGUgw6AgT3V0aWxzIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwRjExMTciLCJ0aGVtZV9jb2xvciI6IiMwRjExMTcifQ==">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+body, html { margin: 0; padding: 0; }
+#root { min-height: 100vh; }
+/* Onboarding screen (shown before React loads, or via React) */
+.onboard-bg {
+  min-height:100vh; background:#0F1117; display:flex; align-items:center; justify-content:center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:#E2E4EB;
+}
+.onboard-card {
+  background:#1A1D27; border:1px solid #2E3345; border-radius:16px; padding:40px;
+  max-width:420px; width:90%; text-align:center; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.onboard-card h1 { font-size:2rem; margin:0 0 8px; }
+.onboard-card h1 span { color:#6C9FFF; }
+.onboard-card .sub { color:#9399AB; font-size:.9rem; margin-bottom:32px; }
+.onboard-card label { display:block; text-align:left; font-size:.8rem; color:#9399AB; margin-bottom:6px; }
+.onboard-card input, .onboard-card select {
+  width:100%; padding:12px 16px; background:#242836; border:1px solid #2E3345; border-radius:10px;
+  color:#E2E4EB; font-size:1rem; margin-bottom:20px; outline:none; box-sizing:border-box;
+}
+.onboard-card input:focus, .onboard-card select:focus { border-color:#6C9FFF; }
+.onboard-card button {
+  width:100%; padding:14px; background:linear-gradient(135deg,#6C9FFF,#A78BFA); border:none;
+  border-radius:10px; color:#0F1117; font-size:1.05rem; font-weight:700; cursor:pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.onboard-card button:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(108,159,255,.3); }
+.onboard-card .icon { font-size:3rem; margin-bottom:16px; }
+.onboard-card .reset-link { color:#9399AB; font-size:.75rem; margin-top:16px; cursor:pointer; text-decoration:underline; }
+.onboard-card .reset-link:hover { color:#FB7185; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ═══════════════════════════════════════════════════════════════
+   CONFIG — mirrors the config.json the prof can toggle
+   ═══════════════════════════════════════════════════════════════ */
+const DEFAULT_CONFIG = {
+  student: "Étudiant",
+  class: "1TPA-2026",
+  tools: {
+    "convertisseur-types":    { enabled: true, unlocked: true,  chapter: 1, label: "Convertisseur de types",       icon: "🔄", color: "#2E86C1" },
+    "simulateur-variables":   { enabled: true, unlocked: true,  chapter: 2, label: "Simulateur de variables",      icon: "📦", color: "#27AE60" },
+    "editeur-gns":            { enabled: true, unlocked: true,  chapter: 2, label: "Éditeur GNS / Pseudocode",     icon: "🗺️", color: "#8E44AD" },
+    "traducteur-c":           { enabled: true, unlocked: true,  chapter: 3, label: "Traducteur GNS → C",           icon: "⚙️", color: "#E67E22" },
+    "debugger-visuel":        { enabled: true, unlocked: true,  chapter: 3, label: "Débogueur visuel C",           icon: "🐛", color: "#C0392B" },
+    "labo-fonctions":         { enabled: true, unlocked: true,  chapter: 4, label: "Laboratoire de fonctions",     icon: "🧩", color: "#16A085" },
+    "glossaire":              { enabled: true, unlocked: true,  chapter: 0, label: "Glossaire technique",          icon: "📖", color: "#5D6D7E" },
+    "assistant-ia":           { enabled: true, unlocked: true,  chapter: 0, label: "Guide IA responsable",         icon: "🤖", color: "#1B4F72" },
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   PROGRAMME COVERAGE MATRIX
+   ═══════════════════════════════════════════════════════════════ */
+const PROGRAMME_COVERAGE = [
+  { id: "P1", text: "Définir la notion de variable",                                    tools: ["simulateur-variables", "glossaire"] },
+  { id: "P2", text: "Identifier et associer les types de variables et leurs contenus",   tools: ["convertisseur-types", "simulateur-variables"] },
+  { id: "P3", text: "Utiliser les variables (affectation, déclaration, opérations…)",    tools: ["simulateur-variables", "traducteur-c"] },
+  { id: "P4", text: "Représenter sous forme schématique (structures cond., itér.…)",     tools: ["editeur-gns"] },
+  { id: "P5", text: "Définir les notions de procédures et de fonctions",                tools: ["labo-fonctions", "glossaire"] },
+  { id: "P6", text: "Identifier et utiliser les procédures et les fonctions",            tools: ["labo-fonctions", "traducteur-c"] },
+  { id: "P7", text: "Réaliser sous forme schématique la structure du programme",         tools: ["editeur-gns"] },
+  { id: "P8", text: "Transposer dans un langage structuré",                             tools: ["editeur-gns", "traducteur-c"] },
+  { id: "P9", text: "Traduire en langage de programmation (syntaxe spécifique)",         tools: ["traducteur-c", "debugger-visuel"] },
+  { id: "P10", text: "Recourir à bon escient à la documentation disponible",            tools: ["assistant-ia", "glossaire"] },
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOSSAIRE DATA — Vocabulaire technique adéquat (programme)
+   ═══════════════════════════════════════════════════════════════ */
+const GLOSSARY = [
+  { term: "Variable", def: "Zone de mémoire nommée qui stocke une valeur d'un type donné.", ch: 1 },
+  { term: "Type", def: "Nature des valeurs qu'une variable peut contenir : int, float, char…", ch: 1 },
+  { term: "Identificateur", def: "Nom donné à une variable, une fonction, etc.", ch: 1 },
+  { term: "Déclaration", def: "Action de réserver un espace mémoire pour une variable.", ch: 2 },
+  { term: "Affectation", def: "Action de placer une valeur dans une variable. En C : variable = valeur;", ch: 2 },
+  { term: "Lecture (Entrée)", def: "L'utilisateur fournit une valeur au programme (scanf en C).", ch: 2 },
+  { term: "Écriture (Sortie)", def: "Le programme affiche un résultat à l'écran (printf en C).", ch: 2 },
+  { term: "Algorithme", def: "Description logique et ordonnée des étapes pour résoudre un problème.", ch: 2 },
+  { term: "GNS (Nassi-Shneiderman)", def: "Graphe structuré pour représenter visuellement un algorithme.", ch: 2 },
+  { term: "Pseudocode", def: "Langage simplifié proche du français pour décrire un algorithme.", ch: 2 },
+  { term: "Ordinogramme", def: "Schéma avec des formes géométriques reliées par des flèches.", ch: 2 },
+  { term: "Structure conditionnelle", def: "if/else — le programme choisit un chemin selon une condition.", ch: 2 },
+  { term: "Structure itérative", def: "Boucle (while, for) — répétition d'instructions.", ch: 2 },
+  { term: "Compilateur", def: "Programme qui traduit le code source C en exécutable machine.", ch: 3 },
+  { term: "Directive #include", def: "Inclut une bibliothèque de fonctions avant la compilation.", ch: 3 },
+  { term: "printf / scanf", def: "Fonctions d'affichage et de lecture formatée en C.", ch: 3 },
+  { term: "Fonction", def: "Sous-programme qui reçoit des paramètres et renvoie une valeur.", ch: 4 },
+  { term: "Procédure", def: "Sous-programme (void) qui exécute une action sans renvoyer de valeur.", ch: 4 },
+  { term: "Paramètre", def: "Variable déclarée dans la signature d'une fonction.", ch: 4 },
+  { term: "Portée (scope)", def: "Zone du code où une variable est accessible.", ch: 4 },
+  { term: "Passage par valeur", def: "Le paramètre reçoit une copie de la valeur, pas l'original.", ch: 4 },
+  { term: "Concaténation", def: "Assemblage de chaînes de caractères bout à bout.", ch: 2 },
+  { term: "Opérateur", def: "Symbole qui effectue une opération : +, -, *, /, %, ==, !=…", ch: 2 },
+  { term: "return", def: "Mot-clé C qui renvoie une valeur depuis une fonction.", ch: 4 },
+  { term: "IDE", def: "Environnement de développement intégré (VS Code, Code::Blocks…).", ch: 0 },
+  { term: "Débogage", def: "Processus de recherche et correction des erreurs dans un programme.", ch: 3 },
+  { term: "Bit / Octet", def: "Bit = 0 ou 1. Octet = 8 bits. Unité de base de la mémoire.", ch: 1 },
+  { term: "RAM", def: "Mémoire centrale rapide mais volatile (s'efface à l'arrêt).", ch: 1 },
+  { term: "CPU", def: "Processeur : le chef d'orchestre qui exécute les instructions.", ch: 1 },
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   STYLES
+   ═══════════════════════════════════════════════════════════════ */
+const fonts = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,700;9..144,900&display=swap');`;
+
+const css = `
+${fonts}
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #0F1117; --surface: #1A1D27; --surface2: #242836;
+  --border: #2E3345; --text: #E2E4EB; --text2: #9399AB;
+  --primary: #6C9FFF; --primary-dim: rgba(108,159,255,.12);
+  --accent: #FF8C42; --accent-dim: rgba(255,140,66,.12);
+  --success: #4ADE80; --success-dim: rgba(74,222,128,.12);
+  --purple: #A78BFA; --purple-dim: rgba(167,139,250,.12);
+  --red: #FB7185; --red-dim: rgba(251,113,133,.12);
+  --teal: #2DD4BF; --teal-dim: rgba(45,212,191,.12);
+  --radius: 12px; --radius-sm: 8px;
+  --font: 'DM Sans', sans-serif; --mono: 'JetBrains Mono', monospace;
+  --display: 'Fraunces', serif;
+}
+body, html { font-family: var(--font); background: var(--bg); color: var(--text); }
+
+.app { min-height:100vh; display:flex; flex-direction:column; }
+
+/* ── HEADER ── */
+.header { 
+  padding: 20px 32px; display:flex; align-items:center; gap:20px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-brand { display:flex; align-items:center; gap:12px; }
+.header-logo {
+  width:44px; height:44px; border-radius:var(--radius-sm);
+  background: linear-gradient(135deg, var(--primary), var(--purple));
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; font-weight:700; color:#fff;
+}
+.header h1 { font-family:var(--display); font-size:1.3rem; font-weight:900; letter-spacing:-.02em; }
+.header h1 span { color:var(--primary); }
+.header-meta { margin-left:auto; text-align:right; font-size:.8rem; color:var(--text2); }
+.header-meta strong { color:var(--text); }
+.nav-back {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); padding:8px 16px; cursor:pointer; font-family:var(--font); font-size:.85rem;
+  transition: all .15s;
+}
+.nav-back:hover { background:var(--primary-dim); border-color:var(--primary); }
+
+/* ── DASHBOARD ── */
+.dashboard { padding:32px; max-width:1200px; margin:0 auto; width:100%; }
+.section-title {
+  font-family:var(--display); font-size:1.5rem; font-weight:900;
+  margin:32px 0 16px; color:var(--text);
+  display:flex; align-items:center; gap:10px;
+}
+.section-title .dot { width:8px; height:8px; border-radius:50%; }
+.tools-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+
+.tool-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:24px; cursor:pointer; transition: all .2s; position:relative; overflow:hidden;
+}
+.tool-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: var(--tool-color); opacity:.7; transition: opacity .2s;
+}
+.tool-card:hover { border-color: var(--tool-color); transform:translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.tool-card:hover::before { opacity:1; }
+.tool-card.locked { opacity:.4; cursor:not-allowed; filter:grayscale(.5); }
+.tool-card .icon { font-size:2rem; margin-bottom:12px; }
+.tool-card .label { font-weight:700; font-size:.95rem; margin-bottom:6px; }
+.tool-card .chapter { font-size:.75rem; color:var(--text2); }
+.tool-card .status {
+  position:absolute; top:12px; right:12px; font-size:.65rem; padding:3px 8px;
+  border-radius:20px; font-weight:600;
+}
+.tool-card .status.on { background:var(--success-dim); color:var(--success); }
+.tool-card .status.off { background:var(--red-dim); color:var(--red); }
+
+/* ── COVERAGE ── */
+.coverage { padding:32px; max-width:1200px; margin:0 auto; width:100%; }
+.coverage-item {
+  display:flex; align-items:flex-start; gap:12px; padding:12px 16px;
+  border-radius:var(--radius-sm); margin-bottom:4px;
+  background:var(--surface); border:1px solid var(--border);
+}
+.coverage-id { font-family:var(--mono); font-size:.75rem; color:var(--primary); font-weight:700; min-width:32px; padding-top:2px; }
+.coverage-text { flex:1; font-size:.85rem; line-height:1.5; }
+.coverage-tools { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.coverage-tag {
+  font-size:.7rem; padding:2px 8px; border-radius:20px; font-weight:600;
+  background:var(--primary-dim); color:var(--primary);
+}
+
+/* ── TOOL VIEWS ── */
+.tool-view { padding:32px; max-width:960px; margin:0 auto; width:100%; }
+.tool-header { display:flex; align-items:center; gap:16px; margin-bottom:32px; }
+.tool-header .th-icon { font-size:2.5rem; }
+.tool-header h2 { font-family:var(--display); font-size:1.6rem; font-weight:900; }
+.tool-header .th-desc { color:var(--text2); font-size:.85rem; margin-top:4px; }
+
+.panel {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:24px; margin-bottom:20px;
+}
+.panel-title { font-weight:700; font-size:.9rem; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+
+input[type=text], input[type=number], select, textarea {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); padding:10px 14px; font-family:var(--font); font-size:.85rem; width:100%;
+  outline:none; transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { border-color:var(--primary); }
+textarea { font-family:var(--mono); resize:vertical; min-height:120px; }
+
+.btn {
+  padding:10px 20px; border-radius:var(--radius-sm); border:1px solid var(--border);
+  background:var(--surface2); color:var(--text); font-family:var(--font); font-size:.85rem;
+  cursor:pointer; font-weight:600; transition: all .15s;
+}
+.btn:hover { background:var(--primary-dim); border-color:var(--primary); }
+.btn-primary { background:var(--primary); color:#0F1117; border-color:var(--primary); }
+.btn-primary:hover { background:#8BB4FF; }
+.btn-sm { padding:6px 12px; font-size:.8rem; }
+.btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+
+.result-box {
+  background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:16px; font-family:var(--mono); font-size:.82rem; line-height:1.7;
+  white-space:pre-wrap; margin-top:12px; overflow-x:auto;
+}
+
+/* keyword colors for C syntax */
+.kw { color:#C792EA; font-weight:700; } .fn { color:#82AAFF; } .str { color:#C3E88D; }
+.cm { color:#546E7A; font-style:italic; } .num { color:#F78C6C; } .op { color:#89DDFF; }
+.type { color:#FFCB6B; }
+
+/* var boxes */
+.var-box {
+  display:inline-flex; flex-direction:column; align-items:center; gap:4px;
+  background:var(--surface2); border:2px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 20px; min-width:100px; transition: all .3s;
+}
+.var-box.changed { border-color:var(--accent); box-shadow:0 0 12px var(--accent-dim); }
+.var-name { font-family:var(--mono); font-weight:700; font-size:.85rem; color:var(--primary); }
+.var-type { font-size:.65rem; color:var(--text2); text-transform:uppercase; letter-spacing:.05em; }
+.var-value { 
+  font-family:var(--mono); font-size:1.2rem; font-weight:700; color:var(--text);
+  background:var(--bg); padding:4px 12px; border-radius:4px; min-width:60px; text-align:center;
+}
+
+/* glossary */
+.gloss-item {
+  padding:14px 18px; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-sm); margin-bottom:8px; cursor:pointer; transition: all .15s;
+}
+.gloss-item:hover { border-color:var(--primary); }
+.gloss-term { font-weight:700; font-size:.9rem; }
+.gloss-ch { font-size:.7rem; color:var(--text2); margin-left:8px; }
+.gloss-def { font-size:.82rem; color:var(--text2); margin-top:6px; line-height:1.5; }
+
+/* guide IA */
+.ia-do { color:var(--success); } .ia-dont { color:var(--red); }
+.ia-item { display:flex; gap:10px; padding:8px 0; font-size:.85rem; line-height:1.5; }
+.ia-icon { font-size:1.1rem; flex-shrink:0; padding-top:1px; }
+
+/* GNS editor */
+.gns-block {
+  border:2px solid var(--border); border-radius:var(--radius-sm);
+  margin:4px 0; overflow:hidden;
+}
+.gns-seq { background:var(--surface2); padding:10px 16px; font-family:var(--mono); font-size:.82rem; }
+.gns-if { border-color:var(--purple); }
+.gns-if-header {
+  background:var(--purple-dim); padding:8px 16px; font-family:var(--mono); font-size:.82rem;
+  color:var(--purple); font-weight:700; text-align:center;
+}
+.gns-if-branches { display:grid; grid-template-columns:1fr 1fr; }
+.gns-if-branch { padding:8px 12px; font-size:.8rem; }
+.gns-if-branch:first-child { border-right:1px solid var(--border); }
+.gns-if-label { font-size:.7rem; color:var(--text2); font-weight:600; margin-bottom:4px; }
+.gns-while { border-color:var(--teal); }
+.gns-while-header {
+  background:var(--teal-dim); padding:8px 16px; font-family:var(--mono); font-size:.82rem;
+  color:var(--teal); font-weight:700;
+}
+.gns-while-body { padding:8px 12px 8px 24px; border-left:3px solid var(--teal); margin-left:12px; }
+
+.tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.tab {
+  padding:10px 20px; font-size:.85rem; font-weight:600; cursor:pointer;
+  color:var(--text2); border-bottom:2px solid transparent; transition: all .15s;
+}
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+.tab:hover { color:var(--text); }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.fade-in { animation: fadeIn .3s ease-out; }
+
+@media(max-width:640px) {
+  .header { padding:12px 16px; flex-wrap:wrap; }
+  .dashboard, .tool-view, .coverage { padding:16px; }
+  .tools-grid { grid-template-columns:1fr; }
+}
+`;
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL 1: CONVERTISSEUR DE TYPES
+   Programme: P2 (identifier/associer types) + P1 (notion variable)
+   ═══════════════════════════════════════════════════════════════ */
+function ConvertisseurTypes() {
+  const [input, setInput] = useState("42");
+  const [mode, setMode] = useState("dec2bin");
+
+  const dec2bin = (n) => { const v=parseInt(n); return isNaN(v)?"—":(v>>>0).toString(2); };
+  const bin2dec = (b) => { const v=parseInt(b,2); return isNaN(v)?"—":String(v); };
+  const dec2hex = (n) => { const v=parseInt(n); return isNaN(v)?"—":"0x"+(v>>>0).toString(16).toUpperCase(); };
+  const dec2oct = (n) => { const v=parseInt(n); return isNaN(v)?"—":"0"+v.toString(8); };
+  const char2ascii = (c) => c.length>0?String(c.charCodeAt(0)):"—";
+  const ascii2char = (n) => { const v=parseInt(n); return (isNaN(v)||v<0||v>127)?"—":String.fromCharCode(v); };
+
+  const typeAnalysis = (val) => {
+    const n = Number(val);
+    if (val === "") return [];
+    const results = [];
+    if (!isNaN(n) && Number.isInteger(n)) results.push({ type:"int", cType:"int", value:String(n), bits:32, color:"var(--primary)" });
+    if (!isNaN(n)) results.push({ type:"réel", cType:"float", value:n.toFixed(6), bits:32, color:"var(--accent)" });
+    if (val.length===1) results.push({ type:"caractère", cType:"char", value:`'${val}' (ASCII: ${val.charCodeAt(0)})`, bits:8, color:"var(--purple)" });
+    if (val.length>0) results.push({ type:"chaîne", cType:"char[]", value:`"${val}"`, bits:val.length*8+8, color:"var(--teal)" });
+    return results;
+  };
+
+  return (
+    <div className="fade-in">
+      <ToolHeader icon="🔄" title="Convertisseur de types" desc="Programme P1-P2 : Définir les variables, identifier et associer les types et leurs contenus" color="#2E86C1" />
+      
+      <div className="panel">
+        <div className="panel-title">🔍 Analyse de type automatique</div>
+        <p style={{fontSize:".82rem",color:"var(--text2)",marginBottom:12}}>Entrez une valeur et découvrez comment elle serait interprétée selon les différents types du langage C.</p>
+        <input type="text" value={input} onChange={e=>setInput(e.target.value)} placeholder="Entrez une valeur (nombre, lettre, texte…)" />
+        {input && (
+          <div style={{display:"flex",flexWrap:"wrap",gap:12,marginTop:16}}>
+            {typeAnalysis(input).map((t,i) => (
+              <div key={i} className="var-box" style={{borderColor:t.color}}>
+                <div className="var-type" style={{color:t.color}}>{t.cType} ({t.bits} bits)</div>
+                <div className="var-name">{t.type}</div>
+                <div className="var-value" style={{fontSize:".85rem"}}>{t.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">🔢 Convertisseur de bases</div>
+        <div className="btn-group" style={{marginBottom:16}}>
+          {[["dec2bin","Déc→Bin"],["bin2dec","Bin→Déc"],["dec2hex","Déc→Hex"],["dec2oct","Déc→Oct"],["char2ascii","Char→ASCII"],["ascii2char","ASCII→Char"]].map(([m,l])=>(
+            <button key={m} className={`btn btn-sm ${mode===m?"btn-primary":""}`} onClick={()=>setMode(m)}>{l}</button>
+          ))}
+        </div>
+        <input type="text" value={input} onChange={e=>setInput(e.target.value)} placeholder="Valeur à convertir" />
+        <div className="result-box" style={{marginTop:12}}>
+          {mode==="dec2bin" && `Décimal: ${input}\nBinaire: ${dec2bin(input)}\n\nExplication: Chaque bit (0 ou 1) représente une puissance de 2.`}
+          {mode==="bin2dec" && `Binaire: ${input}\nDécimal: ${bin2dec(input)}`}
+          {mode==="dec2hex" && `Décimal: ${input}\nHexadécimal: ${dec2hex(input)}`}
+          {mode==="dec2oct" && `Décimal: ${input}\nOctal: ${dec2oct(input)}`}
+          {mode==="char2ascii" && `Caractère: '${input}'\nCode ASCII: ${char2ascii(input)}`}
+          {mode==="ascii2char" && `Code ASCII: ${input}\nCaractère: '${ascii2char(input)}'`}
+        </div>
+      </div>
+
+      <DidacticNote title="💡 Ce que cet outil t'apprend" items={[
+        "Chaque valeur peut être interprétée différemment selon son type.",
+        "Le type détermine combien de mémoire est utilisée (nombre de bits).",
+        "En C, il faut TOUJOURS déclarer le type d'une variable avant de l'utiliser.",
+        "Un même nombre (ex: 65) peut être un entier OU le caractère 'A' en ASCII !"
+      ]} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL 2: SIMULATEUR DE VARIABLES
+   Programme: P1 (notion variable), P2 (types), P3 (opérations)
+   ═══════════════════════════════════════════════════════════════ */
+function SimulateurVariables() {
+  const [vars, setVars] = useState([
+    { name:"compteur", type:"int", value:"0" },
+    { name:"prix", type:"float", value:"19.99" },
+  ]);
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState("int");
+  const [instruction, setInstruction] = useState("compteur = compteur + 1");
+  const [history, setHistory] = useState([]);
+  const [changed, setChanged] = useState(null);
+
+  const addVar = () => {
+    if (!newName.trim()) return;
+    const defaults = { int:"0", float:"0.0", char:"'?'", "char[]":'""' };
+    setVars([...vars, { name:newName.trim(), type:newType, value:defaults[newType]||"0" }]);
+    setNewName("");
+  };
+
+  const removeVar = (i) => setVars(vars.filter((_,j)=>j!==i));
+
+  const execute = () => {
+    const parts = instruction.split("=").map(s=>s.trim());
+    if (parts.length<2) return;
+    const target = parts[0];
+    let expr = parts.slice(1).join("=").trim();
+    
+    const newVars = [...vars];
+    const idx = newVars.findIndex(v=>v.name===target);
+    if (idx===-1) return;
+
+    // Simple expression evaluator
+    let evalExpr = expr;
+    newVars.forEach(v => {
+      const re = new RegExp(`\\b${v.name}\\b`,"g");
+      evalExpr = evalExpr.replace(re, v.value.replace(/'/g,""));
+    });
+    
+    try {
+      const result = Function(`"use strict"; return (${evalExpr})`)();
+      const oldVal = newVars[idx].value;
+      newVars[idx] = {...newVars[idx], value: newVars[idx].type==="float"?Number(result).toFixed(2):String(Math.floor(result)) };
+      setChanged(target);
+      setTimeout(()=>setChanged(null), 800);
+      setHistory([...history, `${target} : ${oldVal} → ${newVars[idx].value}  (instruction: ${instruction})`]);
+      setVars(newVars);
+    } catch(e) { /* ignore eval errors */ }
+  };
+
+  return (
+    <div className="fade-in">
+      <ToolHeader icon="📦" title="Simulateur de variables" desc="Programme P1-P2-P3 : Définir, identifier et utiliser les variables dans des opérations" color="#27AE60" />
+      
+      <div className="panel">
+        <div className="panel-title">📦 Mes variables en mémoire</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:16,marginBottom:20}}>
+          {vars.map((v,i) => (
+            <div key={i} className={`var-box ${changed===v.name?"changed":""}`}>
+              <div className="var-type">{v.type}</div>
+              <div className="var-name">{v.name}</div>
+              <div className="var-value">{v.value}</div>
+              <button onClick={()=>removeVar(i)} style={{fontSize:".7rem",color:"var(--red)",background:"none",border:"none",cursor:"pointer",marginTop:4}}>✕ supprimer</button>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <input type="text" value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Nom" style={{width:140}} />
+          <select value={newType} onChange={e=>setNewType(e.target.value)} style={{width:120}}>
+            <option value="int">int</option><option value="float">float</option>
+            <option value="char">char</option><option value="char[]">char[]</option>
+          </select>
+          <button className="btn btn-primary btn-sm" onClick={addVar}>+ Déclarer</button>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">⚡ Exécuter une instruction</div>
+        <p style={{fontSize:".82rem",color:"var(--text2)",marginBottom:12}}>
+          Écrivez une affectation (ex: <code style={{fontFamily:"var(--mono)",color:"var(--primary)"}}>compteur = compteur + 1</code>) et observez le changement.
+        </p>
+        <div style={{display:"flex",gap:8}}>
+          <input type="text" value={instruction} onChange={e=>setInstruction(e.target.value)} placeholder="variable = expression" />
+          <button className="btn btn-primary" onClick={execute}>▶ Exécuter</button>
+        </div>
+      </div>
+
+      {history.length>0 && (
+        <div className="panel">
+          <div className="panel-title">📜 Historique des opérations</div>
+          <div className="result-box">{history.join("\n")}</div>
+        </div>
+      )}
+
+      <DidacticNote title="💡 Ce que cet outil t'apprend" items={[
+        "Une variable est une « boîte » nommée en mémoire, avec un type fixe.",
+        "L'affectation (=) remplace l'ancienne valeur par la nouvelle.",
+        "L'expression à droite du = est calculée AVANT l'affectation.",
+        "compteur = compteur + 1 : on lit l'ancienne valeur, on ajoute 1, on range le résultat."
+      ]} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL 3: ÉDITEUR GNS / PSEUDOCODE
+   Programme: P4 (repr. schématique), P7, P8
+   ═══════════════════════════════════════════════════════════════ */
+function EditeurGNS() {
+  const [blocks, setBlocks] = useState([
+    { type:"seq", text:'Déclarer entier: compteur, nbre' },
+    { type:"seq", text:'Déclarer réel: rac' },
+    { type:"seq", text:'compteur ← 0' },
+    { type:"while", cond:"compteur < 5", body:[
+      { type:"seq", text:'Lire(nbre)' },
+      { type:"if", cond:"nbre < 0", then:[{type:"seq",text:'Écrire("Pas de racine")'}], else:[{type:"seq",text:'rac ← √(nbre)\nÉcrire(rac)'}] },
+      { type:"seq", text:'compteur ← compteur + 1' },
+    ]},
+    { type:"seq", text:'Écrire("Au revoir")' },
+  ]);
+
+  const [pseudoVisible, setPseudoVisible] = useState(false);
+
+  const renderBlock = (block, key, depth=0) => {
+    if (block.type==="seq") {
+      return <div key={key} className="gns-block"><div className="gns-seq">{block.text}</div></div>;
+    }
+    if (block.type==="if") {
+      return (
+        <div key={key} className="gns-block gns-if">
+          <div className="gns-if-header">SI {block.cond} ?</div>
+          <div className="gns-if-branches">
+            <div className="gns-if-branch">
+              <div className="gns-if-label">✓ VRAI</div>
+              {block.then.map((b,i)=>renderBlock(b,`${key}-t${i}`,depth+1))}
+            </div>
+            <div className="gns-if-branch">
+              <div className="gns-if-label">✗ FAUX</div>
+              {(block.else||[]).map((b,i)=>renderBlock(b,`${key}-e${i}`,depth+1))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (block.type==="while") {
+      return (
+        <div key={key} className="gns-block gns-while">
+          <div className="gns-while-header">TANT QUE {block.cond}</div>
+          <div className="gns-while-body">
+            {block.body.map((b,i)=>renderBlock(b,`${key}-w${i}`,depth+1))}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const toPseudocode = (blocks, indent=0) => {
+    const pad = "    ".repeat(indent);
+    return blocks.map(b => {
+      if (b.type==="seq") return b.text.split("\n").map(l=>`${pad}${l}`).join("\n");
+      if (b.type==="if") {
+        let s = `${pad}SI ${b.cond} ALORS\n`;
+        s += toPseudocode(b.then, indent+1) + "\n";
+        if (b.else?.length) s += `${pad}SINON\n` + toPseudocode(b.else, indent+1) + "\n";
+        s += `${pad}FIN SI`;
+        return s;
+      }
+      if (b.type==="while") {
+        let s = `${pad}TANT QUE ${b.cond} FAIRE\n`;
+        s += toPseudocode(b.body, indent+1) + "\n";
+        s += `${pad}FIN TANT QUE`;
+        return s;
+      }
+      return "";
+    }).join("\n");
+  };
+
+  return (
+    <div className="fade-in">
+      <ToolHeader icon="🗺️" title="Éditeur GNS / Pseudocode" desc="Programme P4-P7-P8 : Représentation schématique et langage structuré" color="#8E44AD" />
+      
+      <div className="panel">
+        <div className="panel-title">📐 Graphe GNS — Exemple : les 5 racines carrées</div>
+        <p style={{fontSize:".82rem",color:"var(--text2)",marginBottom:12}}>Voici la représentation GNS de l'algorithme des racines carrées. Les couleurs distinguent les structures : <span style={{color:"var(--purple)"}}>■ conditionnelles</span> et <span style={{color:"var(--teal)"}}>■ itératives</span>.</p>
+        <div style={{maxWidth:500}}>
+          {blocks.map((b,i) => renderBlock(b, i))}
+        </div>
+      </div>
+
+      <div className="panel">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div className="panel-title" style={{margin:0}}>📝 Pseudocode correspondant</div>
+          <button className="btn btn-sm" onClick={()=>setPseudoVisible(!pseudoVisible)}>
+            {pseudoVisible?"Masquer":"Afficher"}
+          </button>
+        </div>
+        {pseudoVisible && <div className="result-box">{toPseudocode(blocks)}</div>}
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">🧪 Créez votre propre algorithme (pseudocode)</div>
+        <textarea defaultValue={`Déclarer entier: a, b, max\nLire(a)\nLire(b)\nSI a > b ALORS\n    max ← a\nSINON\n    max ← b\nFIN SI\nÉcrire("Le plus grand est:", max)`} style={{minHeight:180}} />
+        <p style={{fontSize:".78rem",color:"var(--text2)",marginTop:8}}>Écrivez votre pseudocode ici. Utilisez SI/SINON/FIN SI et TANT QUE/FIN TANT QUE pour structurer.</p>
+      </div>
+
+      <DidacticNote title="💡 Ce que cet outil t'apprend" items={[
+        "Le GNS représente visuellement la logique d'un programme AVANT de coder.",
+        "Les structures conditionnelles (SI) divisent le flux en deux branches.",
+        "Les structures itératives (TANT QUE) répètent un bloc tant qu'une condition est vraie.",
+        "Le pseudocode est la version texte du GNS : même logique, autre format.",
+        "On conçoit TOUJOURS l'algorithme avant d'écrire du code C !"
+      ]} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL 4: TRADUCTEUR GNS → C
+   Programme: P8, P9, P3
+   ═══════════════════════════════════════════════════════════════ */
+function TraducteurC() {
+  const [pseudo, setPseudo] = useState(`Déclarer entier: n, somme, i\nLire(n)\nsomme ← 0\nPOUR i DE 1 A n FAIRE\n    somme ← somme + i\nFIN POUR\nÉcrire("Somme =", somme)`);
+  const [cCode, setCCode] = useState("");
+
+  const translate = () => {
+    const lines = pseudo.split("\n");
+    let c = '#include <stdio.h>\n\nint main()\n{\n';
+    let indent = 1;
+    const pad = () => "    ".repeat(indent);
+
+    for (let line of lines) {
+      const t = line.trim();
+      if (!t) continue;
+
+      if (t.startsWith("Déclarer entier:")) {
+        c += `${pad()}int ${t.replace("Déclarer entier:","").trim()};\n`;
+      } else if (t.startsWith("Déclarer réel:")) {
+        c += `${pad()}float ${t.replace("Déclarer réel:","").trim()};\n`;
+      } else if (t.startsWith("Déclarer caractère:")) {
+        c += `${pad()}char ${t.replace("Déclarer caractère:","").trim()};\n`;
+      } else if (t.startsWith("Lire(")) {
+        const v = t.match(/Lire\((.+)\)/)?.[1]||"";
+        c += `${pad()}printf("Entrez ${v} : ");\n${pad()}scanf("%d", &${v});\n`;
+      } else if (t.startsWith("Écrire(") || t.startsWith("Ecrire(")) {
+        const content = t.match(/[ÉE]crire\((.+)\)/)?.[1]||"";
+        const parts = content.split(",").map(s=>s.trim());
+        let fmt = "", args = [];
+        for (const p of parts) {
+          if (p.startsWith('"')) { fmt += p.replace(/"/g,""); }
+          else { fmt += " %d"; args.push(p); }
+        }
+        c += `${pad()}printf("${fmt}\\n"${args.length?", "+args.join(", "):""};\n`;
+      } else if (t.startsWith("SI ")) {
+        const cond = t.replace("SI ","").replace(" ALORS","").trim()
+          .replace(/ET/g,"&&").replace(/OU/g,"||").replace(/≥/g,">=").replace(/≤/g,"<=").replace(/≠/g,"!=");
+        c += `${pad()}if (${cond})\n${pad()}{\n`; indent++;
+      } else if (t === "SINON") {
+        indent--; c += `${pad()}}\n${pad()}else\n${pad()}{\n`; indent++;
+      } else if (t === "FIN SI") {
+        indent--; c += `${pad()}}\n`;
+      } else if (t.startsWith("TANT QUE ")) {
+        const cond = t.replace("TANT QUE ","").replace(" FAIRE","").trim()
+          .replace(/ET/g,"&&").replace(/OU/g,"||");
+        c += `${pad()}while (${cond})\n${pad()}{\n`; indent++;
+      } else if (t === "FIN TANT QUE") {
+        indent--; c += `${pad()}}\n`;
+      } else if (t.startsWith("POUR ")) {
+        const m = t.match(/POUR\s+(\w+)\s+DE\s+(\S+)\s+A\s+(\S+)/i);
+        if (m) c += `${pad()}for (int ${m[1]} = ${m[2]}; ${m[1]} <= ${m[3]}; ${m[1]}++)\n${pad()}{\n`;
+        indent++;
+      } else if (t === "FIN POUR") {
+        indent--; c += `${pad()}}\n`;
+      } else if (t.includes("←")) {
+        const [left, right] = t.split("←").map(s=>s.trim());
+        let rExpr = right.replace(/√\(([^)]+)\)/g,"sqrt($1)");
+        c += `${pad()}${left} = ${rExpr};\n`;
+      }
+    }
+    c += '\n    return 0;\n}';
+    setCCode(c);
+  };
+
+  const highlightC = (code) => {
+    return code
+      .replace(/(\/\*[\s\S]*?\*\/|\/\/.*$)/gm, '<span class="cm">$1</span>')
+      .replace(/("(?:[^"\\]|\\.)*")/g, '<span class="str">$1</span>')
+      .replace(/\b(int|float|double|char|void|return|if|else|while|for|do|switch|case|break|continue)\b/g, '<span class="kw">$1</span>')
+      .replace(/\b(printf|scanf|sqrt|pow|abs|main)\b/g, '<span class="fn">$1</span>')
+      .replace(/\b(\d+\.?\d*f?)\b/g, '<span class="num">$1</span>')
+      .replace(/(#include\s*&lt;[^&]*&gt;|#include\s*<[^<]*>)/g, '<span class="type">$1</span>');
+  };
+
+  return (
+    <div className="fade-in">
+      <ToolHeader icon="⚙️" title="Traducteur GNS → C" desc="Programme P8-P9 : Transposer en langage structuré puis traduire en C" color="#E67E22" />
+      
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+        <div className="panel">
+          <div className="panel-title">📝 Pseudocode (langage structuré)</div>
+          <textarea value={pseudo} onChange={e=>setPseudo(e.target.value)} style={{minHeight:240}} />
+          <button className="btn btn-primary" style={{marginTop:12,width:"100%"}} onClick={translate}>⚡ Traduire en C</button>
+        </div>
+        <div className="panel">
+          <div className="panel-title">💻 Code C généré</div>
+          {cCode ? (
+            <div className="result-box" dangerouslySetInnerHTML={{__html:highlightC(cCode.replace(/</g,"&lt;").replace(/>/g,"&gt;"))}} />
+          ) : (
+            <div style={{color:"var(--text2)",fontSize:".85rem",padding:20,textAlign:"center"}}>
+              Cliquez sur « Traduire en C » pour voir le résultat ici.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">📚 Aide-mémoire des correspondances</div>
+        <div className="result-box">{`Pseudocode                    →  C
+──────────────────────────────────────────────
+Déclarer entier: x            →  int x;
+Déclarer réel: x              →  float x;
+x ← valeur                    →  x = valeur;
+Lire(x)                       →  scanf("%d", &x);
+Écrire("texte", x)            →  printf("texte %d\\n", x);
+SI condition ALORS             →  if (condition) {
+SINON                          →  } else {
+FIN SI                         →  }
+TANT QUE condition FAIRE       →  while (condition) {
+FIN TANT QUE                   →  }
+POUR i DE 1 A n FAIRE          →  for (int i = 1; i <= n; i++) {
+FIN POUR                       →  }`}</div>
+      </div>
+
+      <DidacticNote title="💡 Ce que cet outil t'apprend" items={[
+        "Le pseudocode est un intermédiaire entre le GNS et le code C.",
+        "Chaque structure du pseudocode a un équivalent EXACT en C.",
+        "La traduction est quasi mécanique : c'est pourquoi on conçoit d'abord l'algorithme !",
+        "En C, chaque instruction se termine par un point-virgule (;).",
+        "Les blocs de code sont délimités par des accolades { }."
+      ]} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL 5: DÉBOGUEUR VISUEL C — ANALYSE COMPLÈTE
+   Programme: P9 (syntaxe), P3 (opérations)
+   Détecte : erreurs syntaxiques, sémantiques, fonctions inconnues,
+   variables non déclarées, #include manquants, typos courantes, etc.
+   ═══════════════════════════════════════════════════════════════ */
+function DebuggeurVisuel() {
+  const [code, setCode] = useState(`#include <stdio.h>
+#include <math.h>
+
+int main()
+{
+    int cptr;
+    float nbre, rac;
+
+    printf("Calcul de 5 racines carrees.\\n");
+    cptr = 0;
+    while (cptr < 5)
+    {
+        printf("Donne un nombre : ");
+        scanf("%f", &nbre);
+        if (nbre < 0.0f)
+            printf("Pas de racine pour %f\\n", nbre);
+        else
+        {
+            rac = sqrt(nbre);
+            printf("Racine de %f = %f\\n", nbre, rac);
+        }
+        cptr = cptr + 1;
+    }
+    printf("Au revoir.\\n");
+    return 0;
+}`);
+
+  const analyzeCode = (src) => {
+    const issues = [];
+    const lines = src.split("\n");
+
+    /* ── Strip comments for analysis (preserve line count) ── */
+    let stripped = src;
+    stripped = stripped.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g," "));
+    stripped = stripped.replace(/\/\/.*$/gm, m => " ".repeat(m.length));
+    const noStrings = stripped.replace(/"(?:[^"\\]|\\.)*"/g, m => '"' + " ".repeat(Math.max(0,m.length-2)) + '"');
+
+    const sLines = stripped.split("\n");
+    const nsLines = noStrings.split("\n");
+
+    /* ── Known C entities ── */
+    const C_KEYWORDS = new Set(["auto","break","case","char","const","continue","default","do","double",
+      "else","enum","extern","float","for","goto","if","inline","int","long","register","restrict",
+      "return","short","signed","sizeof","static","struct","switch","typedef","union","unsigned",
+      "void","volatile","while","_Bool","_Complex","_Imaginary"]);
+
+    const STDIO_FN = new Set(["printf","scanf","fprintf","fscanf","sprintf","sscanf","snprintf",
+      "fopen","fclose","fread","fwrite","fgets","fputs","fputc","fgetc","puts","gets","getchar",
+      "putchar","feof","ferror","rewind","fseek","ftell","fflush","remove","rename","tmpfile",
+      "tmpnam","perror","setbuf","setvbuf","ungetc","freopen"]);
+    const MATH_FN = new Set(["sqrt","pow","abs","fabs","ceil","floor","round","sin","cos","tan",
+      "asin","acos","atan","atan2","exp","log","log10","log2","fmod","hypot","cbrt"]);
+    const STDLIB_FN = new Set(["malloc","calloc","realloc","free","exit","atoi","atof","atol",
+      "rand","srand","system","abort","labs","div","ldiv","qsort","bsearch","getenv"]);
+    const STRING_FN = new Set(["strlen","strcpy","strncpy","strcat","strncat","strcmp","strncmp",
+      "strchr","strrchr","strstr","strtok","memcpy","memmove","memset","memcmp"]);
+    const CTYPE_FN = new Set(["isalpha","isdigit","isalnum","isspace","isupper","islower",
+      "toupper","tolower","ispunct","isprint","iscntrl","isxdigit","isgraph"]);
+
+    const ALL_STD = new Map();
+    STDIO_FN.forEach(f => ALL_STD.set(f, "stdio.h"));
+    MATH_FN.forEach(f => ALL_STD.set(f, "math.h"));
+    STDLIB_FN.forEach(f => ALL_STD.set(f, "stdlib.h"));
+    STRING_FN.forEach(f => ALL_STD.set(f, "string.h"));
+    CTYPE_FN.forEach(f => ALL_STD.set(f, "ctype.h"));
+
+    const typeWords = new Set(["int","float","double","char","void","long","short","unsigned",
+      "signed","struct","enum","union","_Bool","size_t","FILE","NULL"]);
+
+    /* ── Typo dictionary ── */
+    const TYPO = new Map();
+    ALL_STD.forEach((_, fn) => {
+      for (let i = 0; i < fn.length; i++) {
+        const t = fn.slice(0,i)+fn.slice(i+1);
+        if (t.length>=2 && !ALL_STD.has(t) && !C_KEYWORDS.has(t)) TYPO.set(t,fn);
+      }
+      for (let i = 0; i < fn.length-1; i++) {
+        const a = fn.split(""); [a[i],a[i+1]]=[a[i+1],a[i]];
+        const t = a.join("");
+        if (t!==fn && !ALL_STD.has(t) && !C_KEYWORDS.has(t)) TYPO.set(t,fn);
+      }
+    });
+    const manual = {"print":"printf","prntf":"printf","prinf":"printf","printff":"printf",
+      "pritnf":"printf","pritf":"printf","prnt":"printf","pintrf":"printf",
+      "scan":"scanf","sacnf":"scanf","scnaf":"scanf","scanff":"scanf","scaf":"scanf",
+      "sqr":"sqrt","sqt":"sqrt","squart":"sqrt","squareroot":"sqrt","racine":"sqrt",
+      "mian":"main","mani":"main","maim":"main",
+      "retrun":"return","retun":"return","reutrn":"return","retrn":"return",
+      "wihle":"while","whiel":"while","wile":"while","whle":"while",
+      "inclue":"include","inclde":"include","inlcude":"include",
+      "studio":"stdio","sdtio":"stdio","stido":"stdio",
+      "breka":"break","brek":"break","esle":"else","els":"else","eles":"else",
+      "contnue":"continue","contniue":"continue"};
+    Object.entries(manual).forEach(([k,v])=>TYPO.set(k,v));
+
+    /* Levenshtein */
+    const lev = (a,b) => {
+      if (!a.length) return b.length; if (!b.length) return a.length;
+      const m = Array.from({length:a.length+1},(_,i)=>[i]);
+      for (let j=0;j<=b.length;j++) m[0][j]=j;
+      for (let i=1;i<=a.length;i++) for (let j=1;j<=b.length;j++)
+        m[i][j]=Math.min(m[i-1][j]+1, m[i][j-1]+1, m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+      return m[a.length][b.length];
+    };
+
+    /* Dedup helper */
+    const seen = new Set();
+    const add = (line,type,msg,cat) => {
+      const k = `${line}|${msg.slice(0,50)}`;
+      if (seen.has(k)) return; seen.add(k);
+      issues.push({line,type,msg,cat});
+    };
+
+    /* ═══ PASS 1 — collect declarations ═══ */
+    const headers = new Set();
+    const vars = new Map();   // name -> {type, line}
+    const funcs = new Map();  // name -> {ret, line}
+    funcs.set("main",{ret:"int",line:0});
+
+    lines.forEach((r,i)=>{
+      let m = r.match(/#\s*include\s*[<"]([^>"]+)[>"]/);
+      if (m) headers.add(m[1]);
+    });
+
+    sLines.forEach((line,i)=>{
+      const t = line.trim();
+      // var decl: type name, name = val;
+      const dm = t.match(/^(int|float|double|char|long|short|unsigned|signed|size_t)\s+(.+);$/);
+      if (dm && !dm[2].includes("(")) {
+        dm[2].split(",").forEach(v=>{
+          const c = v.trim().replace(/\s*=.*$/,"").replace(/\[.*\]/g,"").replace(/\*/g,"").trim();
+          if (c && /^[a-zA-Z_]\w*$/.test(c)) vars.set(c,{type:dm[1],line:i+1});
+        });
+      }
+      // func decl
+      const fm = t.match(/^(int|float|double|char|void|long|short|unsigned|signed)\s+\*?\s*([a-zA-Z_]\w*)\s*\(([^)]*)\)/);
+      if (fm) {
+        if (fm[2]!=="main") funcs.set(fm[2],{ret:fm[1],line:i+1});
+        // register params as vars
+        if (fm[3] && fm[3].trim()!=="void" && fm[3].trim()!=="") {
+          fm[3].split(",").forEach(p=>{
+            const pm = p.trim().match(/([a-zA-Z_][\w\s*]*)\s+\*?\s*([a-zA-Z_]\w*)/);
+            if (pm) vars.set(pm[2],{type:pm[1].trim(),line:i+1});
+          });
+        }
+      }
+      // for(int i=...)
+      const fl = t.match(/for\s*\(\s*(int|float|double|char)\s+([a-zA-Z_]\w*)/);
+      if (fl) vars.set(fl[2],{type:fl[1],line:i+1});
+    });
+
+    /* ═══ PASS 2 — line-by-line deep scan ═══ */
+    let braces=0, parens=0, inBlock=false;
+    const usedVars = new Set();
+
+    const getIds = (line) => {
+      const ids = new Set();
+      const cl = line.replace(/"(?:[^"\\]|\\.)*"/g,"").replace(/'(?:[^'\\]|\\.)*'/g,"");
+      let m; const rx = /\b([a-zA-Z_]\w*)\b/g;
+      while ((m=rx.exec(cl))!==null) {
+        const id=m[1];
+        if (!C_KEYWORDS.has(id) && !typeWords.has(id) && !ALL_STD.has(id) && !funcs.has(id)
+            && id!=="NULL" && id!=="EOF" && id!=="true" && id!=="false" && id!=="main") ids.add(id);
+      }
+      return ids;
+    };
+
+    const isDecl = (l) => /^\s*(int|float|double|char|void|long|short|unsigned|signed|size_t|FILE)\s+/.test(l)
+      && !/^\s*(int|float|double|char|void|long|short|unsigned|signed)\s+\*?\s*[a-zA-Z_]\w*\s*\(/.test(l);
+
+    sLines.forEach((line,i)=>{
+      const raw = lines[i];
+      const tr = line.trim();
+      const rtr = raw.trim();
+      const ns = nsLines[i].trim();
+      const ln = i+1;
+
+      if (inBlock) { if (rtr.includes("*/")) inBlock=false; return; }
+      if (rtr.startsWith("/*") && !rtr.includes("*/")) { inBlock=true; return; }
+      if (rtr.startsWith("//")) return;
+      if (!tr) return;
+
+      for (const c of ns) { if(c==="{")braces++; if(c==="}")braces--; if(c==="(")parens++; if(c===")")parens--; }
+
+      /* ── A. SEMICOLONS ── */
+      const structural = tr==="{"||tr==="}"||tr.endsWith("{")||tr.endsWith("}")||tr.endsWith(";")||tr.endsWith("*/")||tr.startsWith("#")
+        ||/^(if|while|for|switch|do)\s*[\({]/.test(tr)||/^(if|while|for|switch)\s*$/.test(tr)
+        ||tr==="else"||tr==="do"
+        ||/^(int|float|double|char|void|long|short|unsigned|signed)\s+\*?\s*[a-zA-Z_]\w*\s*\(/.test(tr);
+      if (tr && !structural) {
+        if (/[a-zA-Z_]\w*\s*[=(+\-*\/]/.test(tr)||/^return\b/.test(tr)
+          ||/\b(printf|scanf|puts|getchar|putchar)\b/.test(tr)||/^[a-zA-Z_]\w*\s*\(/.test(tr)) {
+          add(ln,"error","Point-virgule (;) manquant à la fin de l'instruction.","syntaxe");
+        }
+      }
+
+      /* ── B. FUNCTION CALLS ── */
+      const fcRx = /\b([a-zA-Z_]\w*)\s*\(/g;
+      let fc;
+      while ((fc=fcRx.exec(ns))!==null) {
+        const fn = fc[1];
+        if (C_KEYWORDS.has(fn)||typeWords.has(fn)) continue;
+        // Known std
+        if (ALL_STD.has(fn)) {
+          const h = ALL_STD.get(fn);
+          if (!headers.has(h)) add(ln,"error",`« ${fn}() » nécessite #include <${h}> qui n'est pas inclus.`,"include");
+          continue;
+        }
+        if (funcs.has(fn)) continue;
+        // Typo dict
+        if (TYPO.has(fn)) {
+          add(ln,"error",`« ${fn}() » n'existe pas en C. Vouliez-vous écrire « ${TYPO.get(fn)}() » ?`,"typo");
+          continue;
+        }
+        // Fuzzy match
+        let best=null, bd=Infinity;
+        for (const k of ALL_STD.keys()) { if (Math.abs(k.length-fn.length)>3) continue; const d=lev(fn.toLowerCase(),k.toLowerCase()); if(d>0&&d<=2&&d<bd){bd=d;best=k;} }
+        for (const k of C_KEYWORDS) { if (Math.abs(k.length-fn.length)>2) continue; const d=lev(fn.toLowerCase(),k.toLowerCase()); if(d>0&&d<=2&&d<bd){bd=d;best=k;} }
+        if (best) add(ln,"error",`« ${fn}() » n'existe pas en C. Vouliez-vous écrire « ${best}() » ?`,"typo");
+        else add(ln,"warning",`« ${fn}() » : fonction inconnue. Vérifiez l'orthographe ou déclarez cette fonction.`,"semantic");
+      }
+
+      /* ── C. ALL VARIABLE USAGE ── */
+      if (!isDecl(tr) && !tr.startsWith("#")) {
+        const ids = getIds(ns);
+        ids.forEach(id => {
+          usedVars.add(id);
+          if (!vars.has(id)) {
+            // Typo of declared var?
+            let vs=null, vd=Infinity;
+            vars.forEach((_,dn)=>{ const d=lev(id.toLowerCase(),dn.toLowerCase()); if(d>0&&d<=2&&d<vd){vd=d;vs=dn;} });
+            // Typo of keyword?
+            let ks = TYPO.has(id) ? TYPO.get(id) : null;
+            if (!ks) { for (const kw of C_KEYWORDS) { if (lev(id.toLowerCase(),kw.toLowerCase())<=2 && id!==kw) { ks=kw; break; } } }
+            // Typo of std func used without () ?
+            let fs = null;
+            for (const sf of ALL_STD.keys()) { if (lev(id.toLowerCase(),sf.toLowerCase())<=1 && id!==sf) { fs=sf; break; } }
+
+            if (ks) add(ln,"error",`« ${id} » n'est pas un mot-clé C valide. Vouliez-vous écrire « ${ks} » ?`,"typo");
+            else if (vs) add(ln,"error",`Variable « ${id} » non déclarée. Vouliez-vous écrire « ${vs} » ?`,"semantic");
+            else if (fs) add(ln,"error",`« ${id} » ressemble à la fonction « ${fs}() ». Il manque peut-être les parenthèses ?`,"typo");
+            else add(ln,"warning",`Variable « ${id} » utilisée mais jamais déclarée. Ajoutez une déclaration (ex: int ${id};).`,"semantic");
+          }
+        });
+      }
+
+      /* ── D. scanf CHECKS ── */
+      const scans = [...tr.matchAll(/scanf\s*\(\s*"([^"]*)"\s*,\s*((?:[^()]*|\([^()]*\))*)\)/g)];
+      for (const sm of scans) {
+        const fmt=sm[1], argsStr=sm[2];
+        const args = argsStr.split(",").map(a=>a.trim()).filter(Boolean);
+        args.forEach(arg => {
+          if (!arg.startsWith("&") && !arg.includes("[") && !arg.startsWith("*"))
+            add(ln,"error",`scanf : il manque « & » devant « ${arg} ». Écrivez « &${arg} ».`,"semantic");
+        });
+        const sp = (fmt.match(/%[dficlsueEgGxXop.0-9*-]*[dficlsueEgGxXop]/g)||[]).filter(s=>s!=="%%");
+        if (sp.length!==args.length) add(ln,"warning",`scanf : ${sp.length} format(s) mais ${args.length} argument(s). Chaque % doit correspondre à un argument.`,"semantic");
+        // Type mismatch
+        sp.forEach((s,idx)=>{
+          if (idx>=args.length) return;
+          const a = args[idx].replace("&","").trim();
+          const vi = vars.get(a);
+          if (vi) {
+            if ((s.includes("d")||s.includes("i")) && (vi.type==="float"||vi.type==="double"))
+              add(ln,"warning",`scanf : « ${a} » est ${vi.type} mais format « ${s} » attend un entier. Utilisez « %f ».`,"semantic");
+            if (s.includes("f") && vi.type==="int")
+              add(ln,"warning",`scanf : « ${a} » est int mais format « ${s} » attend un réel. Utilisez « %d ».`,"semantic");
+          }
+        });
+      }
+
+      /* ── E. printf CHECKS ── */
+      const prints = [...tr.matchAll(/(?<!f)printf\s*\(\s*"([^"]*)"\s*(?:,\s*((?:[^()]*|\([^()]*\))*))?\)/g)];
+      for (const pm of prints) {
+        const fmt=pm[1], argsStr=pm[2]||"";
+        const sp = (fmt.match(/%[-+ 0#]*[0-9*]*\.?[0-9*]*[hlLqjzt]*[dficlsueEgGxXop%]/g)||[]).filter(s=>s!=="%%");
+        const args = argsStr ? argsStr.split(",").map(a=>a.trim()).filter(Boolean) : [];
+        if (sp.length!==args.length) add(ln,"warning",`printf : ${sp.length} format(s) mais ${args.length} variable(s). Chaque %d/%f/%s doit avoir un argument.`,"semantic");
+      }
+      // & in printf
+      if (/printf\s*\(.*,\s*&\w/.test(tr) && !/&\w+\[/.test(tr))
+        add(ln,"warning","printf : le « & » est pour scanf, pas printf. Retirez-le.","semantic");
+
+      /* ── F. LOGICAL ERRORS ── */
+      if (/\b(if|while)\s*\(/.test(tr)) {
+        const cm = tr.match(/\b(?:if|while)\s*\((.+)\)\s*$/);
+        if (cm) {
+          const cond = cm[1].replace(/[!=<>]=|==/g,"##");
+          if (/[^#]=[^=]/.test(cond)||/^=/.test(cond))
+            add(ln,"warning","« = » dans une condition = AFFECTATION. Pour comparer, utilisez « == ».","logique");
+        }
+      }
+      if (/^(if|while|for)\s*\(.*\)\s*;\s*$/.test(tr)) {
+        const kw = tr.match(/^(\w+)/)[1];
+        add(ln,"warning",`Le « ; » après ${kw}() crée un corps VIDE. L'instruction suivante s'exécute inconditionnellement.`,"logique");
+      }
+      if (/\/\s*0\s*[;)\s,]/.test(ns) && !/\/\s*0\.\d/.test(ns))
+        add(ln,"warning","Division par zéro potentielle.","logique");
+      if (/while\s*\(\s*(1|true)\s*\)/.test(tr))
+        add(ln,"info","Boucle infinie while(1). Assurez-vous d'avoir un break ou return.","logique");
+
+      /* ── G. DIRECTIVES ── */
+      if (rtr.startsWith("#")) {
+        const dm = rtr.match(/^#\s*(\w+)/);
+        if (dm) {
+          const dir = dm[1];
+          const ok = new Set(["include","define","ifdef","ifndef","endif","else","elif","if","undef","pragma","error","warning","line"]);
+          if (!ok.has(dir)) {
+            if (TYPO.has(dir)) add(ln,"error",`Directive « #${dir} » inconnue. → « #${TYPO.get(dir)} » ?`,"typo");
+            else add(ln,"warning",`Directive « #${dir} » non reconnue.`,"syntaxe");
+          }
+        }
+        const hm = rtr.match(/#\s*include\s*<([^>]+)>/);
+        if (hm) {
+          const h = hm[1];
+          const kh = new Set(["stdio.h","stdlib.h","math.h","string.h","ctype.h","time.h","limits.h","float.h","assert.h","errno.h","signal.h","stdarg.h","stdbool.h","stddef.h","stdint.h"]);
+          if (!kh.has(h)) {
+            let sug=null; kh.forEach(x=>{ if(lev(h,x)<=2 && h!==x) sug=x; });
+            if (sug) add(ln,"error",`En-tête « <${h}> » inconnu. → « <${sug}> » ?`,"typo");
+            else add(ln,"info",`En-tête « <${h}> » non standard.`,"include");
+          }
+        }
+      }
+
+      /* ── H. MISC BEGINNER ── */
+      if (/^\s*([a-zA-Z_]\w*)\s*;/.test(tr)) {
+        const nm = tr.match(/^\s*([a-zA-Z_]\w*)\s*;/);
+        if (nm && (ALL_STD.has(nm[1])||funcs.has(nm[1])))
+          add(ln,"warning",`« ${nm[1]} » est une fonction — il manque les parenthèses : ${nm[1]}()`,"syntaxe");
+      }
+      if (/;;/.test(tr) && !/for\s*\(/.test(tr))
+        add(ln,"warning","Double « ;; » détecté. Un point-virgule en trop ?","syntaxe");
+      if (/=\s*;/.test(tr))
+        add(ln,"error","Valeur manquante après « = ». Écrivez une valeur (ex: = 0;).","syntaxe");
+    });
+
+    /* ═══ PASS 3 — global checks ═══ */
+    if (braces!==0) add(0,"error",`Accolades { } déséquilibrées : ${braces>0?"il manque "+braces+" « } »":""+(-braces)+" « } » en trop"}.`,"syntaxe");
+    if (parens!==0) add(0,"error",`Parenthèses ( ) déséquilibrées : ${parens>0?"il manque "+parens+" « ) »":""+(-parens)+" « ) » en trop"}.`,"syntaxe");
+    if (!src.includes("main")) add(0,"error","Pas de fonction main(). Tout programme C doit avoir int main().","structure");
+    if (src.includes("main") && !stripped.includes("return")) add(0,"info","Pas de « return 0; ». Bonne pratique : terminez main() par return 0;","style");
+
+    // Declared but never used
+    vars.forEach((info,name)=>{
+      if (!usedVars.has(name)) add(info.line,"info",`Variable « ${name} » déclarée mais jamais utilisée.`,"semantic");
+    });
+    // Used but never initialized
+    vars.forEach((info,name)=>{
+      if (usedVars.has(name)) {
+        const assigned = sLines.some(l => {
+          const t=l.trim();
+          return new RegExp(`\\b${name}\\s*=[^=]`).test(t) || new RegExp(`&${name}\\b`).test(t)
+            || new RegExp(`^(int|float|double|char).*\\b${name}\\s*=`).test(t);
+        });
+        if (!assigned) add(info.line,"warning",`Variable « ${name} » jamais initialisée. Sa valeur est indéterminée (risque de bug).`,"logique");
+      }
+    });
+
+    const pr = {error:0,warning:1,info:2};
+    issues.sort((a,b)=>(pr[a.type]||9)-(pr[b.type]||9)||(a.line||999)-(b.line||999));
+    return issues;
+  };
+
+  const highlightCode = (src) => {
+    const escaped = src.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    return escaped
+      .replace(/(\/\*[\s\S]*?\*\/|\/\/.*$)/gm, '<span class="cm">$1</span>')
+      .replace(/("(?:[^"\\]|\\.)*")/g, '<span class="str">$1</span>')
+      .replace(/\b(int|float|double|char|void|return|if|else|while|for|do|switch|case|break|continue|struct|enum|union|typedef|const|sizeof|unsigned|signed|long|short|static|extern|register|volatile)\b/g, '<span class="kw">$1</span>')
+      .replace(/\b(printf|scanf|fprintf|fscanf|sprintf|sscanf|puts|gets|getchar|putchar|fopen|fclose|fread|fwrite|fgets|fputs|sqrt|pow|abs|fabs|ceil|floor|round|sin|cos|tan|exp|log|log10|malloc|calloc|realloc|free|exit|atoi|atof|rand|srand|strlen|strcpy|strcat|strcmp|strncpy|strncat|strncmp|strchr|strstr|memcpy|memset|isalpha|isdigit|isalnum|toupper|tolower|main)\b/g, '<span class="fn">$1</span>')
+      .replace(/\b(\d+\.?\d*[fFlL]?)\b/g, '<span class="num">$1</span>')
+      .replace(/(#\s*include\s*&lt;[^&]*&gt;)/g, '<span class="type">$1</span>')
+      .replace(/(#\s*include\s*"[^"]*")/g, '<span class="type">$1</span>')
+      .replace(/(#\s*define\b.*$)/gm, '<span class="type">$1</span>');
+  };
+
+  const issues = analyzeCode(code);
+  const errorCount = issues.filter(i=>i.type==="error").length;
+  const warnCount = issues.filter(i=>i.type==="warning").length;
+  const infoCount = issues.filter(i=>i.type==="info").length;
+
+  const issueLines = new Set(issues.map(i=>i.line).filter(l=>l>0));
+
+  const catLabels = { syntaxe:"Syntaxe", semantic:"Sémantique", typo:"Typo / Orthographe", include:"#include", logique:"Logique", structure:"Structure", style:"Style" };
+  const catColors = { syntaxe:"var(--red)", semantic:"var(--accent)", typo:"var(--purple)", include:"var(--primary)", logique:"var(--teal)", structure:"var(--red)", style:"var(--text2)" };
+  const typeIcons = { error:"🔴", warning:"🟡", info:"🔵" };
+  const typeColors = { error:"var(--red)", warning:"var(--accent)", info:"var(--primary)" };
+  const typeBgs = { error:"var(--red-dim)", warning:"var(--accent-dim)", info:"var(--primary-dim)" };
+
+  return (
+    <div className="fade-in">
+      <ToolHeader icon="🐛" title="Débogueur visuel C" desc="Programme P9 : Vérifier la syntaxe ET la logique du langage C" color="#C0392B" />
+      
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+        <div className="panel">
+          <div className="panel-title">✏️ Votre code C</div>
+          <textarea value={code} onChange={e=>setCode(e.target.value)} style={{minHeight:400,lineHeight:"1.6"}} />
+        </div>
+        <div className="panel">
+          <div className="panel-title">🎨 Code avec coloration syntaxique</div>
+          <div className="result-box" style={{minHeight:400}} dangerouslySetInnerHTML={{__html:
+            highlightCode(code).split("\n").map((line,i) => {
+              const hasIssue = issueLines.has(i+1);
+              const bg = hasIssue ? "rgba(251,113,133,.08)" : "transparent";
+              const marker = hasIssue ? '<span style="color:var(--red)">●</span>' : " ";
+              return `<span style="background:${bg};display:inline-block;width:100%">${marker}<span style="color:var(--text2);user-select:none">${String(i+1).padStart(3)}</span>  ${line}</span>`;
+            }).join("\n")
+          }} />
+        </div>
+      </div>
+
+      <div className="panel">
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div className="panel-title" style={{margin:0}}>🔍 Analyse complète</div>
+          <div style={{display:"flex",gap:12,fontSize:".8rem"}}>
+            {errorCount > 0 && <span style={{color:"var(--red)",fontWeight:700}}>🔴 {errorCount} erreur{errorCount>1?"s":""}</span>}
+            {warnCount > 0 && <span style={{color:"var(--accent)",fontWeight:700}}>🟡 {warnCount} avertissement{warnCount>1?"s":""}</span>}
+            {infoCount > 0 && <span style={{color:"var(--primary)",fontWeight:700}}>🔵 {infoCount} info{infoCount>1?"s":""}</span>}
+            {issues.length===0 && <span style={{color:"var(--success)",fontWeight:700}}>✅ Aucun problème</span>}
+          </div>
+        </div>
+        {issues.length===0 ? (
+          <div style={{color:"var(--success)",fontSize:".9rem",padding:16,textAlign:"center",background:"var(--success-dim)",borderRadius:"var(--radius-sm)"}}>
+            ✓ Aucun problème détecté — votre code semble correct. Compilez-le avec GCC pour une vérification finale !
+          </div>
+        ) : (
+          issues.map((issue,i) => (
+            <div key={i} style={{display:"flex",gap:10,padding:"10px 14px",marginBottom:6,borderRadius:"var(--radius-sm)",
+              background:typeBgs[issue.type],borderLeft:`3px solid ${typeColors[issue.type]}`}}>
+              <span style={{fontSize:"1rem",flexShrink:0}}>{typeIcons[issue.type]}</span>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:2}}>
+                  <span style={{fontFamily:"var(--mono)",fontSize:".75rem",color:typeColors[issue.type],fontWeight:700}}>
+                    {issue.line>0?`Ligne ${issue.line}`:"Global"}
+                  </span>
+                  {issue.cat && <span style={{fontSize:".65rem",padding:"1px 6px",borderRadius:10,
+                    background:"rgba(255,255,255,.06)",color:catColors[issue.cat]||"var(--text2)",fontWeight:600}}>
+                    {catLabels[issue.cat]||issue.cat}
+                  </span>}
+                </div>
+                <div style={{fontSize:".85rem",lineHeight:1.5}}>{issue.msg}</div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">📊 Types d'erreurs détectées par cet outil</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,fontSize:".82rem"}}>
+          {[
+            ["🔤 Typos / Orthographe", "print au lieu de printf, scnaf au lieu de scanf…"],
+            ["⚡ Syntaxe", "Point-virgule manquant, accolades/parenthèses déséquilibrées"],
+            ["📚 #include manquants", "Utilisation de sqrt sans #include <math.h>"],
+            ["🧠 Sémantique", "Variable non déclarée, nombre d'arguments printf/scanf incorrect"],
+            ["🎯 Logique", "= au lieu de == dans une condition, ; après if()"],
+            ["🏗️ Structure", "Pas de main(), pas de return"],
+          ].map(([title,desc],i) => (
+            <div key={i} style={{padding:10,background:"var(--surface2)",borderRadius:"var(--radius-sm)"}}>
+              <div style={{fontWeight:700,marginBottom:4}}>{title}</div>
+              <div style={{color:"var(--text2)",fontSize:".78rem"}}>{desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <DidacticNote title="💡 Ce que cet outil t'apprend" items={[
+        "Un compilateur vérifie BEAUCOUP plus que les points-virgules : fonctions inconnues, types, arguments…",
+        "Les typos (print au lieu de printf) sont parmi les erreurs les plus fréquentes et les plus frustrantes.",
+        "Chaque fonction standard C appartient à un en-tête (#include) spécifique : printf → stdio.h, sqrt → math.h.",
+        "La coloration syntaxique aide à repérer visuellement les éléments : si un mot n'est pas coloré comme attendu, c'est suspect !",
+        "Cet outil ne remplace pas GCC : compilez TOUJOURS votre code pour une vérification complète."
+      ]} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL 6: LABORATOIRE DE FONCTIONS
+   Programme: P5 (définir), P6 (identifier et utiliser)
+   ═══════════════════════════════════════════════════════════════ */
+function LaboFonctions() {
+  const [fnName, setFnName] = useState("calculerMoyenne");
+  const [fnType, setFnType] = useState("float");
+  const [params, setParams] = useState([{type:"float",name:"a"},{type:"float",name:"b"}]);
+  const [newPType, setNewPType] = useState("int");
+  const [newPName, setNewPName] = useState("");
+
+  const addParam = () => {
+    if (!newPName.trim()) return;
+    setParams([...params,{type:newPType,name:newPName.trim()}]);
+    setNewPName("");
+  };
+
+  const removeParam = (i) => setParams(params.filter((_,j)=>j!==i));
+
+  const generateCode = () => {
+    const paramStr = params.map(p=>`${p.type} ${p.name}`).join(", ");
+    let code = "";
+    if (fnType==="void") {
+      code = `/* Procédure : ne renvoie rien */\nvoid ${fnName}(${paramStr||"void"})\n{\n    /* Votre code ici */\n    \n}\n`;
+    } else {
+      code = `/* Fonction : renvoie un ${fnType} */\n${fnType} ${fnName}(${paramStr||"void"})\n{\n    ${fnType} resultat;\n    \n    /* Votre calcul ici */\n    resultat = 0;\n    \n    return resultat;\n}\n`;
+    }
+    code += `\n/* Appel depuis main() */\nint main()\n{\n`;
+    if (fnType==="void") {
+      code += `    ${fnName}(${params.map(p=>p.name==="a"?"10":p.name==="b"?"20":p.name).join(", ")});\n`;
+    } else {
+      code += `    ${fnType} res = ${fnName}(${params.map(p=>p.name==="a"?"10.0":p.name==="b"?"20.0":p.name).join(", ")});\n`;
+      code += `    printf("Résultat : %${fnType==="int"?"d":"f"}\\n", res);\n`;
+    }
+    code += `    return 0;\n}`;
+    return code;
+  };
+
+  const examples = [
+    { name:"Fonction carre(n)", fn:"carre", type:"int", params:[{type:"int",name:"n"}], body:"return n * n;" },
+    { name:"Fonction estPair(n)", fn:"estPair", type:"int", params:[{type:"int",name:"n"}], body:"return (n % 2 == 0) ? 1 : 0;" },
+    { name:"Procédure afficherMenu()", fn:"afficherMenu", type:"void", params:[], body:'printf("=== MENU ===\\n");' },
+    { name:"Fonction max(a,b)", fn:"max", type:"int", params:[{type:"int",name:"a"},{type:"int",name:"b"}], body:"return (a > b) ? a : b;" },
+  ];
+
+  return (
+    <div className="fade-in">
+      <ToolHeader icon="🧩" title="Laboratoire de fonctions" desc="Programme P5-P6 : Définir, identifier et utiliser les procédures et fonctions" color="#16A085" />
+
+      <div className="panel">
+        <div className="panel-title">🏗️ Constructeur de fonction/procédure</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+          <div>
+            <label style={{fontSize:".75rem",color:"var(--text2)",display:"block",marginBottom:4}}>Nom de la fonction</label>
+            <input type="text" value={fnName} onChange={e=>setFnName(e.target.value)} />
+          </div>
+          <div>
+            <label style={{fontSize:".75rem",color:"var(--text2)",display:"block",marginBottom:4}}>Type de retour</label>
+            <select value={fnType} onChange={e=>setFnType(e.target.value)}>
+              <option value="int">int (entier)</option>
+              <option value="float">float (réel)</option>
+              <option value="double">double (réel précis)</option>
+              <option value="char">char (caractère)</option>
+              <option value="void">void (procédure)</option>
+            </select>
+          </div>
+        </div>
+
+        <label style={{fontSize:".75rem",color:"var(--text2)",display:"block",marginBottom:8}}>Paramètres</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
+          {params.map((p,i) => (
+            <span key={i} style={{background:"var(--surface2)",padding:"4px 12px",borderRadius:20,fontSize:".82rem",display:"flex",alignItems:"center",gap:6}}>
+              <span style={{color:"var(--primary)",fontFamily:"var(--mono)"}}>{p.type}</span> {p.name}
+              <button onClick={()=>removeParam(i)} style={{background:"none",border:"none",color:"var(--red)",cursor:"pointer",fontSize:".8rem"}}>✕</button>
+            </span>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <select value={newPType} onChange={e=>setNewPType(e.target.value)} style={{width:120}}>
+            <option value="int">int</option><option value="float">float</option>
+            <option value="double">double</option><option value="char">char</option>
+          </select>
+          <input type="text" value={newPName} onChange={e=>setNewPName(e.target.value)} placeholder="Nom du paramètre" style={{width:180}} />
+          <button className="btn btn-sm" onClick={addParam}>+ Ajouter</button>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">💻 Code C généré</div>
+        <div className="result-box">{generateCode()}</div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">📚 Exemples classiques</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          {examples.map((ex,i) => (
+            <button key={i} className="btn" style={{textAlign:"left",padding:16}} onClick={()=>{setFnName(ex.fn);setFnType(ex.type);setParams(ex.params);}}>
+              <div style={{fontWeight:700,marginBottom:4}}>{ex.name}</div>
+              <code style={{fontFamily:"var(--mono)",fontSize:".75rem",color:"var(--text2)"}}>{ex.body}</code>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <DidacticNote title="💡 Ce que cet outil t'apprend" items={[
+        "Une FONCTION renvoie une valeur (int, float…) via return.",
+        "Une PROCÉDURE (void) exécute une action sans renvoyer de valeur.",
+        "Les paramètres sont des « entrées » de la fonction.",
+        "Chaque fonction a sa propre portée : ses variables lui sont locales.",
+        "Découper en fonctions rend le code lisible, réutilisable et testable."
+      ]} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL 7: GLOSSAIRE TECHNIQUE
+   Programme: P10 (vocabulaire technique adéquat)
+   ═══════════════════════════════════════════════════════════════ */
+function GlossaireTool() {
+  const [filter, setFilter] = useState("");
+  const [filterCh, setFilterCh] = useState(-1);
+  const [expanded, setExpanded] = useState(null);
+
+  const filtered = GLOSSARY.filter(g => {
+    if (filterCh >= 0 && g.ch !== filterCh) return false;
+    if (filter && !g.term.toLowerCase().includes(filter.toLowerCase()) && !g.def.toLowerCase().includes(filter.toLowerCase())) return false;
+    return true;
+  }).sort((a,b) => a.term.localeCompare(b.term));
+
+  return (
+    <div className="fade-in">
+      <ToolHeader icon="📖" title="Glossaire technique" desc="Programme P10 : Utiliser le vocabulaire technique adéquat et recourir à la documentation" color="#5D6D7E" />
+      
+      <div className="panel">
+        <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+          <input type="text" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="🔍 Rechercher un terme…" style={{flex:1,minWidth:200}} />
+          <div className="btn-group">
+            {[[-1,"Tous"],[0,"Intro"],[1,"Ch.1"],[2,"Ch.2"],[3,"Ch.3"],[4,"Ch.4"]].map(([ch,label]) => (
+              <button key={ch} className={`btn btn-sm ${filterCh===ch?"btn-primary":""}`} onClick={()=>setFilterCh(ch)}>{label}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{fontSize:".82rem",color:"var(--text2)",marginBottom:12}}>{filtered.length} terme{filtered.length!==1?"s":""}</div>
+        {filtered.map((g,i) => (
+          <div key={i} className="gloss-item" onClick={()=>setExpanded(expanded===i?null:i)}>
+            <div style={{display:"flex",alignItems:"center"}}>
+              <span className="gloss-term">{g.term}</span>
+              <span className="gloss-ch">Chapitre {g.ch}</span>
+            </div>
+            {(expanded===i) && <div className="gloss-def">{g.def}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOL 8: GUIDE IA RESPONSABLE
+   Programme: P10 (documentation) + compétence transversale IA
+   ═══════════════════════════════════════════════════════════════ */
+function GuideIA() {
+  const doItems = [
+    "Expliquer un concept que tu ne comprends pas",
+    "Relire ton code et signaler des erreurs potentielles",
+    "Te donner des INDICES quand tu bloques (pas la solution !)",
+    "Générer des cas de test pour vérifier ton programme",
+    "Expliquer les messages d'erreur du compilateur",
+    "Proposer des améliorations de ton code existant",
+    "Te montrer différentes façons de résoudre un problème",
+    "Vérifier ton GNS/pseudocode en le décrivant en texte",
+  ];
+  const dontItems = [
+    "Écrire ton programme à ta place",
+    "Concevoir ton algorithme / GNS sans que tu aies essayé",
+    "Résoudre les exercices directement",
+    "Remplacer ta réflexion personnelle",
+    "Copier-coller du code sans le comprendre",
+    "Utiliser l'IA pendant un examen (sauf si autorisé)",
+  ];
+  const prompts = [
+    { label:"Comprendre un concept", prompt:'Explique-moi comme si j\'avais 10 ans : qu\'est-ce qu\'une variable en programmation ?' },
+    { label:"Vérifier un GNS", prompt:'Voici mon algorithme en pseudocode : [colle ton pseudocode]. Est-il correct ? Y a-t-il des cas que j\'ai oubliés ?' },
+    { label:"Relire du code C", prompt:'Voici mon code C : [colle ton code]. Peux-tu le relire et me dire s\'il y a des erreurs ou des améliorations possibles ?' },
+    { label:"Comprendre une erreur", prompt:'GCC me donne cette erreur : [colle l\'erreur]. Que signifie-t-elle et comment la corriger ?' },
+    { label:"Demander un indice", prompt:'Je n\'arrive pas à faire fonctionner ma boucle while. Je veux [objectif]. Peux-tu me donner un indice sans me donner la solution ?' },
+    { label:"Générer des tests", prompt:'Voici mon programme : [description]. Quelles valeurs dois-je tester pour vérifier qu\'il fonctionne correctement dans tous les cas ?' },
+  ];
+
+  return (
+    <div className="fade-in">
+      <ToolHeader icon="🤖" title="Guide IA responsable" desc="Programme P10 : Recourir à bon escient à la documentation disponible (incluant l'IA)" color="#1B4F72" />
+      
+      <div className="panel" style={{borderLeft:"4px solid var(--accent)",background:"var(--accent-dim)"}}>
+        <div style={{fontFamily:"var(--display)",fontSize:"1.1rem",fontWeight:900,color:"var(--accent)",marginBottom:8}}>
+          Règle d'or
+        </div>
+        <div style={{fontSize:".9rem",lineHeight:1.6}}>
+          L'IA t'aide à <strong>comprendre</strong>, jamais à <strong>éviter de réfléchir</strong>.<br/>
+          Tu dois TOUJOURS être capable d'expliquer chaque ligne de code que tu produis.
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+        <div className="panel">
+          <div className="panel-title" style={{color:"var(--success)"}}>✅ Ce que l'IA peut faire</div>
+          {doItems.map((item,i) => (
+            <div key={i} className="ia-item"><span className="ia-icon ia-do">✓</span><span>{item}</span></div>
+          ))}
+        </div>
+        <div className="panel">
+          <div className="panel-title" style={{color:"var(--red)"}}>🚫 Ce que l'IA ne doit PAS faire</div>
+          {dontItems.map((item,i) => (
+            <div key={i} className="ia-item"><span className="ia-icon ia-dont">✗</span><span>{item}</span></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">💬 Prompts modèles — Comment bien parler à l'IA</div>
+        <p style={{fontSize:".82rem",color:"var(--text2)",marginBottom:16}}>Copie-colle ces modèles et adapte-les à ta situation :</p>
+        {prompts.map((p,i) => (
+          <div key={i} style={{marginBottom:12,padding:12,background:"var(--surface2)",borderRadius:"var(--radius-sm)"}}>
+            <div style={{fontWeight:700,fontSize:".85rem",color:"var(--primary)",marginBottom:6}}>{p.label}</div>
+            <code style={{fontFamily:"var(--mono)",fontSize:".78rem",color:"var(--text2)",lineHeight:1.5,display:"block"}}>{p.prompt}</code>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARED COMPONENTS
+   ═══════════════════════════════════════════════════════════════ */
+function ToolHeader({ icon, title, desc, color }) {
+  return (
+    <div className="tool-header">
+      <div className="th-icon">{icon}</div>
+      <div>
+        <h2 style={{color}}>{title}</h2>
+        <div className="th-desc">{desc}</div>
+      </div>
+    </div>
+  );
+}
+
+function DidacticNote({ title, items }) {
+  return (
+    <div className="panel" style={{borderLeft:"4px solid var(--success)",marginTop:20}}>
+      <div className="panel-title" style={{color:"var(--success)"}}>{title}</div>
+      {items.map((item,i) => (
+        <div key={i} style={{display:"flex",gap:8,padding:"4px 0",fontSize:".85rem",lineHeight:1.5}}>
+          <span style={{color:"var(--success)",flexShrink:0}}>▸</span><span>{item}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN APP
+   ═══════════════════════════════════════════════════════════════ */
+const TOOL_COMPONENTS = {
+  "convertisseur-types": ConvertisseurTypes,
+  "simulateur-variables": SimulateurVariables,
+  "editeur-gns": EditeurGNS,
+  "traducteur-c": TraducteurC,
+  "debugger-visuel": DebuggeurVisuel,
+  "labo-fonctions": LaboFonctions,
+  "glossaire": GlossaireTool,
+  "assistant-ia": GuideIA,
+};
+
+function App() {
+  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [activeTool, setActiveTool] = useState(null);
+  const [tab, setTab] = useState("tools");
+
+  const ToolComponent = activeTool ? TOOL_COMPONENTS[activeTool] : null;
+
+  const chapterGroups = {};
+  Object.entries(config.tools).forEach(([id, tool]) => {
+    const ch = tool.chapter;
+    if (!chapterGroups[ch]) chapterGroups[ch] = [];
+    chapterGroups[ch].push({ id, ...tool });
+  });
+
+  const chapterNames = { 0: "Outils transversaux", 1: "Ch.1 — Types & Mémoire", 2: "Ch.2 — Algorithmes & GNS", 3: "Ch.3 — Langage C", 4: "Ch.4 — Fonctions" };
+  const chapterColors = { 0: "var(--text2)", 1: "var(--primary)", 2: "var(--purple)", 3: "var(--accent)", 4: "var(--teal)" };
+
+  return (
+    <div className="app">
+      <style>{css}</style>
+      
+      {/* HEADER */}
+      <header className="header">
+        {activeTool && (
+          <button className="nav-back" onClick={()=>setActiveTool(null)}>← Retour</button>
+        )}
+        <div className="header-brand">
+          <div className="header-logo">⚡</div>
+          <h1>Boîte à <span>Outils</span></h1>
+        </div>
+        <div className="header-meta">
+          <strong>{config.student}</strong><br/>
+          {config.class} • 2026–2027
+        </div>
+      </header>
+
+      {/* TOOL VIEW */}
+      {activeTool && ToolComponent ? (
+        <div className="tool-view"><ToolComponent /></div>
+      ) : (
+        <>
+          {/* TABS */}
+          <div className="tabs" style={{paddingLeft:32}}>
+            <div className={`tab ${tab==="tools"?"active":""}`} onClick={()=>setTab("tools")}>🧰 Mes outils</div>
+            <div className={`tab ${tab==="coverage"?"active":""}`} onClick={()=>setTab("coverage")}>📋 Couverture programme</div>
+            <div className={`tab ${tab==="config"?"active":""}`} onClick={()=>setTab("config")}>⚙️ Configuration</div>
+          </div>
+
+          {/* DASHBOARD */}
+          {tab==="tools" && (
+            <div className="dashboard fade-in">
+              {Object.entries(chapterGroups).sort(([a],[b])=>a-b).map(([ch, tools]) => (
+                <div key={ch}>
+                  <div className="section-title">
+                    <span className="dot" style={{background:chapterColors[ch]}} />
+                    {chapterNames[ch]}
+                  </div>
+                  <div className="tools-grid">
+                    {tools.map(tool => (
+                      <div
+                        key={tool.id}
+                        className={`tool-card ${!tool.unlocked?"locked":""}`}
+                        style={{"--tool-color":tool.color}}
+                        onClick={()=>tool.unlocked&&tool.enabled&&setActiveTool(tool.id)}
+                      >
+                        <span className={`status ${tool.enabled?"on":"off"}`}>{tool.enabled?"Actif":"Inactif"}</span>
+                        <div className="icon">{tool.icon}</div>
+                        <div className="label">{tool.label}</div>
+                        <div className="chapter">Chapitre {tool.chapter} {!tool.unlocked&&"• 🔒 Verrouillé"}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* COVERAGE */}
+          {tab==="coverage" && (
+            <div className="coverage fade-in">
+              <div className="section-title"><span className="dot" style={{background:"var(--success)"}} /> Couverture du programme officiel</div>
+              <p style={{fontSize:".85rem",color:"var(--text2)",marginBottom:20,lineHeight:1.6}}>
+                Chaque acquis d'apprentissage du programme « 75 22 47 U21 D1 — Programmation Niveau 1 » est couvert par un ou plusieurs outils de cette boîte.
+              </p>
+              {PROGRAMME_COVERAGE.map((item,i) => (
+                <div key={i} className="coverage-item">
+                  <div className="coverage-id">{item.id}</div>
+                  <div>
+                    <div className="coverage-text">{item.text}</div>
+                    <div className="coverage-tools">
+                      {item.tools.map(tid => (
+                        <span key={tid} className="coverage-tag" onClick={()=>{setActiveTool(tid);setTab("tools");}} style={{cursor:"pointer"}}>
+                          {config.tools[tid]?.icon} {config.tools[tid]?.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* CONFIG */}
+          {tab==="config" && (
+            <div className="dashboard fade-in">
+              <div className="section-title"><span className="dot" style={{background:"var(--accent)"}} /> Configuration (config.json)</div>
+              <p style={{fontSize:".85rem",color:"var(--text2)",marginBottom:20,lineHeight:1.6}}>
+                Le professeur peut activer ou désactiver chaque outil. Cette configuration est sauvegardée dans le fichier <code style={{fontFamily:"var(--mono)",color:"var(--primary)"}}>config.json</code> de votre dépôt GitHub.
+              </p>
+              <div className="panel">
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+                  <div>
+                    <label style={{fontSize:".75rem",color:"var(--text2)",display:"block",marginBottom:4}}>Nom de l'étudiant</label>
+                    <input type="text" value={config.student} onChange={e=>setConfig({...config,student:e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{fontSize:".75rem",color:"var(--text2)",display:"block",marginBottom:4}}>Classe</label>
+                    <input type="text" value={config.class} onChange={e=>setConfig({...config,class:e.target.value})} />
+                  </div>
+                </div>
+                {Object.entries(config.tools).map(([id,tool]) => (
+                  <div key={id} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+                    <span style={{fontSize:"1.2rem",width:30}}>{tool.icon}</span>
+                    <span style={{flex:1,fontWeight:600,fontSize:".85rem"}}>{tool.label}</span>
+                    <label style={{display:"flex",alignItems:"center",gap:6,fontSize:".8rem",color:"var(--text2)"}}>
+                      <input type="checkbox" checked={tool.enabled} onChange={e=>{
+                        const t = {...config.tools}; t[id]={...t[id],enabled:e.target.checked};
+                        setConfig({...config,tools:t});
+                      }} /> Actif
+                    </label>
+                    <label style={{display:"flex",alignItems:"center",gap:6,fontSize:".8rem",color:"var(--text2)"}}>
+                      <input type="checkbox" checked={tool.unlocked} onChange={e=>{
+                        const t = {...config.tools}; t[id]={...t[id],unlocked:e.target.checked};
+                        setConfig({...config,tools:t});
+                      }} /> Déverrouillé
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="panel" style={{marginTop:20}}>
+                <div className="panel-title">📄 Aperçu config.json</div>
+                <div className="result-box">{JSON.stringify({student:config.student,class:config.class,tools:Object.fromEntries(Object.entries(config.tools).map(([id,t])=>[id,{enabled:t.enabled,unlocked:t.unlocked}]))},null,2)}</div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ROOT WRAPPER — Onboarding + localStorage persistence
+   ═══════════════════════════════════════════════════════════════ */
+function RootApp() {
+  const STORAGE_KEY = "boite-outils-profile";
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [classe, setClasse] = useState("1TPA-2026");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.student) { setProfile(parsed); }
+      }
+    } catch(e) {}
+    setLoading(false);
+  }, []);
+
+  const saveProfile = () => {
+    if (!name.trim()) return;
+    const p = { student: name.trim(), class: classe };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    setProfile(p);
+  };
+
+  const resetProfile = () => {
+    if (confirm("Êtes-vous sûr ? Cela réinitialisera votre profil.")) {
+      localStorage.removeItem(STORAGE_KEY);
+      setProfile(null);
+      setName("");
+    }
+  };
+
+  if (loading) return null;
+
+  if (!profile) {
+    return (
+      <div className="onboard-bg">
+        <div className="onboard-card">
+          <div className="icon">🧰</div>
+          <h1>Boîte à <span>Outils</span></h1>
+          <div className="sub">Votre prof en poche — Configurez votre boîte personnelle</div>
+          <label>Votre nom complet</label>
+          <input
+            type="text" placeholder="ex: Jean Dupont" value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && saveProfile()}
+            autoFocus
+          />
+          <label>Votre classe</label>
+          <select value={classe} onChange={e => setClasse(e.target.value)}>
+            <option value="1TPA-2026">1TPA — 2026-2027</option>
+            <option value="1TPB-2026">1TPB — 2026-2027</option>
+            <option value="1TPC-2026">1TPC — 2026-2027</option>
+            <option value="Autre">Autre</option>
+          </select>
+          <button onClick={saveProfile}>🚀 Lancer ma Boîte à Outils</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* Inject profile into DEFAULT_CONFIG */
+  const customConfig = { ...DEFAULT_CONFIG, student: profile.student, class: profile.class };
+
+  return (
+    <div>
+      <AppWithProfile initialConfig={customConfig} onReset={resetProfile} />
+    </div>
+  );
+}
+
+/* Wrap the original App to accept props */
+function AppWithProfile({ initialConfig, onReset }) {
+  const [config, setConfig] = useState(initialConfig);
+  const [activeTool, setActiveTool] = useState(null);
+  const [tab, setTab] = useState("tools");
+
+  const ToolComponent = activeTool ? ({
+    "convertisseur-types": ConvertisseurTypes,
+    "simulateur-variables": SimulateurVariables,
+    "editeur-gns": EditeurGNS,
+    "traducteur-c": TraducteurC,
+    "debugger-visuel": DebuggeurVisuel,
+    "labo-fonctions": LaboFonctions,
+    "glossaire": GlossaireTool,
+    "assistant-ia": GuideIA,
+  })[activeTool] : null;
+
+  const chapterGroups = {};
+  Object.entries(config.tools).forEach(([id, tool]) => {
+    const ch = tool.chapter;
+    if (!chapterGroups[ch]) chapterGroups[ch] = [];
+    chapterGroups[ch].push({ id, ...tool });
+  });
+
+  const chapterNames = { 0: "Outils transversaux", 1: "Ch.1 — Types & Mémoire", 2: "Ch.2 — Algorithmes & GNS", 3: "Ch.3 — Langage C", 4: "Ch.4 — Fonctions" };
+  const chapterColors = { 0: "var(--text2)", 1: "var(--primary)", 2: "var(--purple)", 3: "var(--accent)", 4: "var(--teal)" };
+
+  return (
+    <div className="app">
+      <style>{css}</style>
+      <header className="header">
+        {activeTool && (
+          <button className="nav-back" onClick={()=>setActiveTool(null)}>← Retour</button>
+        )}
+        <div className="header-brand">
+          <div className="header-logo">⚡</div>
+          <h1>Boîte à <span>Outils</span></h1>
+        </div>
+        <div className="header-meta">
+          <strong>{config.student}</strong><br/>
+          {config.class}
+          <br/><span onClick={onReset} style={{fontSize:".7rem",color:"var(--red)",cursor:"pointer",opacity:.6}}>Changer de profil</span>
+        </div>
+      </header>
+
+      {activeTool && ToolComponent ? (
+        <div className="tool-view"><ToolComponent /></div>
+      ) : (
+        <>
+          <div className="tabs" style={{paddingLeft:32}}>
+            <div className={`tab ${tab==="tools"?"active":""}`} onClick={()=>setTab("tools")}>🧰 Mes outils</div>
+            <div className={`tab ${tab==="coverage"?"active":""}`} onClick={()=>setTab("coverage")}>📋 Programme</div>
+            <div className={`tab ${tab==="config"?"active":""}`} onClick={()=>setTab("config")}>⚙️ Config</div>
+          </div>
+
+          {tab==="tools" && (
+            <div className="dashboard fade-in">
+              {Object.entries(chapterGroups).sort(([a],[b])=>a-b).map(([ch, tools]) => (
+                <div key={ch}>
+                  <div className="section-title">
+                    <span className="dot" style={{background:chapterColors[ch]}} />
+                    {chapterNames[ch]}
+                  </div>
+                  <div className="tools-grid">
+                    {tools.map(tool => (
+                      <div key={tool.id}
+                        className={`tool-card ${!tool.unlocked?"locked":""}`}
+                        style={{"--tool-color":tool.color}}
+                        onClick={()=>tool.unlocked&&tool.enabled&&setActiveTool(tool.id)}
+                      >
+                        <span className={`status ${tool.enabled?"on":"off"}`}>{tool.enabled?"Actif":"Inactif"}</span>
+                        <div className="icon">{tool.icon}</div>
+                        <div className="label">{tool.label}</div>
+                        <div className="chapter">Chapitre {tool.chapter} {!tool.unlocked&&"• 🔒"}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab==="coverage" && (
+            <div className="coverage fade-in">
+              <div className="section-title"><span className="dot" style={{background:"var(--success)"}} /> Couverture du programme officiel</div>
+              <p style={{fontSize:".85rem",color:"var(--text2)",marginBottom:20,lineHeight:1.6}}>
+                Chaque acquis du programme « 75 22 47 U21 D1 » est couvert par un ou plusieurs outils.
+              </p>
+              {PROGRAMME_COVERAGE.map((item,i) => (
+                <div key={i} className="coverage-item">
+                  <div className="coverage-id">{item.id}</div>
+                  <div>
+                    <div className="coverage-text">{item.text}</div>
+                    <div className="coverage-tools">
+                      {item.tools.map(tid => (
+                        <span key={tid} className="coverage-tag" onClick={()=>{setActiveTool(tid);setTab("tools");}} style={{cursor:"pointer"}}>
+                          {config.tools[tid]?.icon} {config.tools[tid]?.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab==="config" && (
+            <div className="dashboard fade-in">
+              <div className="section-title"><span className="dot" style={{background:"var(--accent)"}} /> Configuration</div>
+              <div className="panel">
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+                  <div>
+                    <label style={{fontSize:".75rem",color:"var(--text2)",display:"block",marginBottom:4}}>Nom</label>
+                    <input type="text" value={config.student} onChange={e=>setConfig({...config,student:e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={{fontSize:".75rem",color:"var(--text2)",display:"block",marginBottom:4}}>Classe</label>
+                    <input type="text" value={config.class} onChange={e=>setConfig({...config,class:e.target.value})} />
+                  </div>
+                </div>
+                {Object.entries(config.tools).map(([id,tool]) => (
+                  <div key={id} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+                    <span style={{fontSize:"1.2rem",width:30}}>{tool.icon}</span>
+                    <span style={{flex:1,fontWeight:600,fontSize:".85rem"}}>{tool.label}</span>
+                    <label style={{display:"flex",alignItems:"center",gap:6,fontSize:".8rem",color:"var(--text2)"}}>
+                      <input type="checkbox" checked={tool.enabled} onChange={e=>{
+                        const t = {...config.tools}; t[id]={...t[id],enabled:e.target.checked};
+                        setConfig({...config,tools:t});
+                      }} /> Actif
+                    </label>
+                    <label style={{display:"flex",alignItems:"center",gap:6,fontSize:".8rem",color:"var(--text2)"}}>
+                      <input type="checkbox" checked={tool.unlocked} onChange={e=>{
+                        const t = {...config.tools}; t[id]={...t[id],unlocked:e.target.checked};
+                        setConfig({...config,tools:t});
+                      }} /> Déverr.
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="panel" style={{marginTop:20}}>
+                <div className="panel-title">📄 config.json</div>
+                <div className="result-box">{JSON.stringify({student:config.student,class:config.class,tools:Object.fromEntries(Object.entries(config.tools).map(([id,t])=>[id,{enabled:t.enabled,unlocked:t.unlocked}]))},null,2)}</div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(RootApp));
+</script>
+</body>
+</html>
